@@ -1,0 +1,618 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>قائمة طعام مطعم قداح</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Scheherazade+New:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        /* Custom Styles */
+        body {
+            font-family: 'Scheherazade New', serif;
+            background-color: #F7F8F3;
+            color: #000000;
+            transition: background-color 0.3s ease, color 0.3s ease;
+        }
+        .brand-green { background-color: #007B2D; }
+        .brand-green-text { color: #007B2D; }
+        .brand-green-border { border-color: #007B2D; }
+        .brand-orange { background-color: #F58220; }
+        
+        .filter-bar-wrapper {
+            position: relative;
+            margin-bottom: 1.5rem;
+            padding: 0 4px;
+        }
+
+        #filter-container {
+            display: flex;
+            overflow-x: auto;
+            white-space: nowrap;
+            padding-bottom: 1rem; 
+            margin-bottom: -1rem;
+            gap: 12px;
+            scroll-behavior: smooth;
+            overscroll-behavior-x: contain;
+            scroll-snap-type: x mandatory;
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+
+        #filter-container::-webkit-scrollbar { display: none; }
+
+        .filter-bar-wrapper::before,
+        .filter-bar-wrapper::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            bottom: 1rem;
+            width: 32px;
+            pointer-events: none;
+            transition: opacity 300ms ease;
+            z-index: 2;
+        }
+
+        .filter-bar-wrapper::before {
+            left: 0;
+            background: linear-gradient(to right, #F7F8F3 20%, rgba(247, 248, 243, 0));
+            opacity: var(--left-fade-opacity, 0);
+        }
+
+        .filter-bar-wrapper::after {
+            right: 0;
+            background: linear-gradient(to left, #F7F8F3 20%, rgba(247, 248, 243, 0));
+            opacity: var(--right-fade-opacity, 1);
+        }
+        
+        .filter-btn-salads { background-color: #F58220; }
+        .filter-btn-appetizers { background-color: #009444; }
+        .filter-btn-meat { background-color: #5C7864; }
+        .filter-btn-chicken { background-color: #D98D3D; }
+        .filter-btn-seafood { background-color: #FBE571; color: #333; }
+
+        .filter-btn {
+            flex-shrink: 0;
+            border-bottom: none;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            transition: transform 250ms ease, box-shadow 250ms ease;
+            scroll-snap-align: start;
+        }
+
+        .filter-btn:hover {
+            transform: scale(1.04);
+            box-shadow: 0 12px 28px rgba(0,0,0,0.18);
+        }
+        
+        .filter-btn.active {
+            transform: scale(1.04);
+            box-shadow: 0 12px 28px rgba(0,0,0,0.22);
+        }
+        
+        .corner-ribbon {
+            position: absolute;
+            top: -10px;
+            left: -10px;
+            width: 40px;
+            height: 40px;
+            transform: rotate(-45deg);
+        }
+        
+        .item-detail {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.5s ease-in-out, padding 0.5s ease-in-out;
+            padding-top: 0;
+            padding-bottom: 0;
+        }
+
+        .item-detail.active {
+            max-height: 500px;
+            padding-top: 1rem;
+            padding-bottom: 1rem;
+        }
+        
+        .header-leaf {
+            position: absolute;
+            top: 0;
+            width: 100px;
+            height: auto;
+            z-index: 0;
+        }
+        .header-leaf.left { left: 0; transform: scaleX(-1); }
+        .header-leaf.right { right: 0; }
+
+        @keyframes card-enter {
+            from { opacity: 0; transform: scale(0.94) translateY(8px); }
+            to { opacity: 1; transform: scale(1) translateY(0); }
+        }
+
+        .category-card, .item-card, .item-detail {
+            background-color: #ffffff;
+        }
+
+        .category-card {
+            position: relative;
+            overflow: hidden;
+            border: 1px solid #007B2D;
+            transition: transform 300ms cubic-bezier(0.22, 1, 0.36, 1), box-shadow 300ms cubic-bezier(0.22, 1, 0.36, 1);
+            opacity: 0;
+            transform: scale(0.94);
+            box-shadow: 0 8px 15px rgba(0, 50, 20, 0.1);
+        }
+        
+        .category-card.animate-enter {
+             animation: card-enter 400ms cubic-bezier(0.22, 1, 0.36, 1) forwards;
+        }
+
+        .category-card:hover,
+        .category-card:focus-visible {
+            transform: scale(1.03) translateY(-3px);
+            box-shadow: 0 16px 35px rgba(0, 50, 20, 0.18), 0 0 0 2px rgba(212, 175, 55, 0.15);
+            outline: none;
+        }
+        
+        .category-card:active {
+            transform: scale(1.0);
+            transition-duration: 100ms;
+            box-shadow: 0 8px 15px rgba(0, 50, 20, 0.15), 0 0 0 2px rgba(212, 175, 55, 0.1);
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+            .category-card, .filter-btn, .item-detail, body {
+                transition: none;
+                animation: none !important;
+            }
+            .category-card.animate-enter {
+                opacity: 1;
+                transform: scale(1);
+            }
+            .category-card:hover,
+            .category-card:focus-visible {
+                transform: none;
+            }
+        }
+
+        @media (max-width: 640px) {
+            .header-leaf { width: 70px; }
+            #category-grid { gap: 12px; }
+        }
+        @media (min-width: 641px) {
+            #category-grid { gap: 24px; }
+        }
+    </style>
+</head>
+<body class="antialiased">
+
+    <div id="app" class="max-w-2xl mx-auto p-4 relative">
+        
+        <img src="leaf1.png" alt="decorative leaf" class="header-leaf left" onerror="this.style.display='none'">
+        <img src="leaf1.png" alt="decorative leaf" class="header-leaf right" onerror="this.style.display='none'">
+
+        <header class="relative text-center mb-6 z-10">
+            <img src="logo.png" alt="شعار مطعم قداح" class="w-72 mx-auto mb-4" onerror="this.onerror=null;this.src='https://placehold.co/192x80/007B2D/FFFFFF?text=Logo';">
+            <div class="relative">
+                <input type="text" id="search-input" placeholder="ابحث في الأقسام..." class="w-full py-2 px-4 pr-10 rounded-lg border-2 brand-green-border focus:outline-none focus:ring-2 focus:ring-green-300 bg-white text-lg">
+                <svg class="w-6 h-6 absolute left-3 top-1/2 transform -translate-y-1/2 brand-green-text" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+            </div>
+        </header>
+
+        <main id="main-content" class="relative z-10">
+            <div id="category-page">
+                <div class="filter-bar-wrapper">
+                    <div id="filter-container" class="cursor-grab">
+                        <button data-filter="all" class="filter-btn filter-btn-salads text-white font-bold py-2 px-4 w-28 rounded-lg text-lg active">الكل</button>
+                        <button data-filter="salads" class="filter-btn filter-btn-salads text-white font-bold py-2 px-4 w-28 rounded-lg text-lg">السلطات</button>
+                        <button data-filter="starters" class="filter-btn filter-btn-appetizers text-white font-bold py-2 px-4 w-28 rounded-lg text-lg">مقبلات</button>
+                        <button data-filter="meat" class="filter-btn filter-btn-meat text-white font-bold py-2 px-4 w-28 rounded-lg text-lg">لحم</button>
+                        <button data-filter="chicken" class="filter-btn filter-btn-chicken text-white font-bold py-2 px-4 w-28 rounded-lg text-lg">دجاج</button>
+                        <button data-filter="seafood" class="filter-btn filter-btn-seafood font-bold py-2 px-4 w-28 rounded-lg text-lg">بحريات</button>
+                        <button data-filter="italian" class="filter-btn filter-btn-appetizers text-white font-bold py-2 px-4 w-32 rounded-lg text-lg">أطباق ايطالية</button>
+                        <button data-filter="oriental" class="filter-btn filter-btn-meat text-white font-bold py-2 px-4 w-32 rounded-lg text-lg">المطبخ الشرقي</button>
+                        <button data-filter="drinks" class="filter-btn filter-btn-appetizers text-white font-bold py-2 px-4 w-28 rounded-lg text-lg">مشروبات</button>
+                        <button data-filter="breakfast" class="filter-btn filter-btn-chicken text-white font-bold py-2 px-4 w-28 rounded-lg text-lg">الفطور</button>
+                    </div>
+                </div>
+
+                <div id="category-grid" class="grid grid-cols-2 sm:grid-cols-3">
+                    <!-- Categories will be injected here by JavaScript -->
+                </div>
+            </div>
+
+            <div id="subcategory-page" class="hidden">
+                <button id="back-to-menu" class="brand-green text-white font-bold py-2 px-6 rounded-lg mb-4 w-full text-lg">
+                    الرجوع للقائمة
+                </button>
+                <h2 id="subcategory-title" class="text-3xl font-bold brand-green-text text-center mb-4"></h2>
+                <div id="item-list" class="space-y-4">
+                    <!-- Menu items will be injected here by JavaScript -->
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        // --- DATA ---
+        const menuData = {
+            "السلطات": {
+                tags: ['salads'],
+                icon: 'السلطات.png',
+                ribbonColor: 'brand-green',
+                items: [
+                    { name: "سلطة قداح", price: 6000, image: "https://placehold.co/400x300/CCCCCC/FFFFFF?text=سلطة", description: "وصف المنتج هنا" },
+                    { name: "سلطة كينوا", price: 8000, image: "https://placehold.co/400x300/CCCCCC/FFFFFF?text=سلطة", description: "وصف المنتج هنا" },
+                    { name: "سلطة الجرجير", price: 6000, image: "https://placehold.co/400x300/CCCCCC/FFFFFF?text=سلطة", description: "وصف المنتج هنا" },
+                    { name: "تبولة", price: 6000, image: "https://placehold.co/400x300/CCCCCC/FFFFFF?text=سلطة", description: "وصف المنتج هنا" },
+                    { name: "فتوش", price: 6000, image: "https://placehold.co/400x300/CCCCCC/FFFFFF?text=سلطة", description: "وصف المنتج هنا" },
+                    { name: "سيزر دجاج", price: 8000, image: "https://placehold.co/400x300/CCCCCC/FFFFFF?text=سلطة", description: "وصف المنتج هنا" },
+                    { name: "سلطة كراب", price: 9000, image: "https://placehold.co/400x300/CCCCCC/FFFFFF?text=سلطة", description: "وصف المنتج هنا" }
+                ]
+            },
+            "مقبلات باردة": {
+                tags: ['starters'],
+                icon: 'المقبلات الباردة.png',
+                ribbonColor: 'brand-green',
+                items: [
+                    { name: "حمص كلاسيكي", price: 4000, image: "https://placehold.co/400x300/CCCCCC/FFFFFF?text=مقبلات", description: "وصف المنتج هنا" },
+                    { name: "حمص باللحمة", price: 7000, image: "https://placehold.co/400x300/CCCCCC/FFFFFF?text=مقبلات", description: "وصف المنتج هنا" },
+                    { name: "حمص بالفطر", price: 5000, image: "https://placehold.co/400x300/CCCCCC/FFFFFF?text=مقبلات", description: "وصف المنتج هنا" },
+                    { name: "حمسة باذنجان مع فيتا", price: 4000, image: "https://placehold.co/400x300/CCCCCC/FFFFFF?text=مقبلات", description: "وصف المنتج هنا" },
+                    { name: "متبل باذنجان", price: 5000, image: "https://placehold.co/400x300/CCCCCC/FFFFFF?text=مقبلات", description: "وصف المنتج هنا" },
+                    { name: "جاجيك", price: 4000, image: "https://placehold.co/400x300/CCCCCC/FFFFFF?text=مقبلات", description: "وصف المنتج هنا" },
+                    { name: "ورق عنب", price: 6000, image: "https://placehold.co/400x300/CCCCCC/FFFFFF?text=مقبلات", description: "وصف المنتج هنا" }
+                ]
+            },
+            "مقبلات حارة": {
+                tags: ['starters'],
+                icon: 'المقبلات الحارة.png',
+                ribbonColor: 'brand-green',
+                items: [
+                    { name: "بطاطا حارة", price: 6000, image: "https://placehold.co/400x300/CCCCCC/FFFFFF?text=مقبلات", description: "وصف المنتج هنا" },
+                    { name: "حلوم بانية", price: 6000, image: "https://placehold.co/400x300/CCCCCC/FFFFFF?text=مقبلات", description: "وصف المنتج هنا" },
+                    { name: "روبيان بانية", price: 10000, image: "https://placehold.co/400x300/CCCCCC/FFFFFF?text=مقبلات", description: "وصف المنتج هنا" },
+                    { name: "رقاقات دجاج", price: 5000, image: "https://placehold.co/400x300/CCCCCC/FFFFFF?text=مقبلات", description: "وصف المنتج هنا" },
+                    { name: "رقاقات جبنة بالبيستو", price: 6000, image: "https://placehold.co/400x300/CCCCCC/FFFFFF?text=مقبلات", description: "وصف المنتج هنا" },
+                    { name: "فطر بالزيت والحامض", price: 7000, image: "https://placehold.co/400x300/CCCCCC/FFFFFF?text=مقبلات", description: "وصف المنتج هنا" },
+                    { name: "بطاطا مقلية", price: 4000, image: "https://placehold.co/400x300/CCCCCC/FFFFFF?text=مقبلات", description: "وصف المنتج هنا" }
+                ]
+            },
+            "الفتة": {
+                tags: ['starters', 'meat'],
+                icon: 'الفتة.png',
+                ribbonColor: 'brand-orange',
+                items: [
+                    { name: "فتة باذنجان", price: 8000, image: "https://placehold.co/400x300/CCCCCC/FFFFFF?text=فتة", description: "وصف المنتج هنا" },
+                    { name: "فتة لحمة", price: 12000, image: "https://placehold.co/400x300/CCCCCC/FFFFFF?text=فتة", description: "وصف المنتج هنا" }
+                ]
+            },
+            "أطباق دجاج": {
+                tags: ['chicken'],
+                icon: 'أطباق الدجاج.png',
+                ribbonColor: 'brand-green',
+                items: [
+                    { name: "مسخن دجاج", price: 15000, image: "https://placehold.co/400x300/CCCCCC/FFFFFF?text=دجاج", description: "وصف المنتج هنا" },
+                    { name: "دجاج بالكريما والسبانخ", price: 14000, image: "https://placehold.co/400x300/CCCCCC/FFFFFF?text=دجاج", description: "وصف المنتج هنا" },
+                    { name: "دجاج بالحامض", price: 14000, image: "https://placehold.co/400x300/CCCCCC/FFFFFF?text=دجاج", description: "وصف المنتج هنا" },
+                    { name: "سكالوب", price: 14000, image: "https://placehold.co/400x300/CCCCCC/FFFFFF?text=دجاج", description: "وصف المنتج هنا" },
+                    { name: "دجاج بالفرن مع الزيتون والفطر", price: 16000, image: "https://placehold.co/400x300/CCCCCC/FFFFFF?text=دجاج", description: "وصف المنتج هنا" }
+                ]
+            },
+            "أطباق لحم": {
+                tags: ['meat'],
+                icon: 'أطباق اللحم.png',
+                ribbonColor: 'brand-green',
+                items: [
+                    { name: "فريكة لحم", price: 20000, image: "https://placehold.co/400x300/CCCCCC/FFFFFF?text=لحم", description: "وصف المنتج هنا" },
+                    { name: "شرحات لحم ترافل", price: 25000, image: "https://placehold.co/400x300/CCCCCC/FFFFFF?text=لحم", description: "وصف المنتج هنا" },
+                    { name: "شرحات لحم بالحامض", price: 25000, image: "https://placehold.co/400x300/CCCCCC/FFFFFF?text=لحم", description: "وصف المنتج هنا" },
+                    { name: "شرحات حبل ضهر", price: 22000, image: "https://placehold.co/400x300/CCCCCC/FFFFFF?text=لحم", description: "وصف المنتج هنا" }
+                ]
+            },
+            "أطباق ايطالية": {
+                tags: ['italian', 'chicken', 'seafood'],
+                icon: 'الأطباق الايطالية.png',
+                ribbonColor: 'brand-orange',
+                items: [
+                    { name: "ريزوتو دجاج", price: 12000, image: "https://placehold.co/400x300/CCCCCC/FFFFFF?text=ايطالي", description: "وصف المنتج هنا" },
+                    { name: "ريزوتو روبيان", price: 18000, image: "https://placehold.co/400x300/CCCCCC/FFFFFF?text=ايطالي", description: "وصف المنتج هنا" },
+                    { name: "سباغيتي بالدجاج والسبانخ", price: 13000, image: "https://placehold.co/400x300/CCCCCC/FFFFFF?text=ايطالي", description: "وصف المنتج هنا" },
+                    { name: "سباغيتي ترافل", price: 18000, image: "https://placehold.co/400x300/CCCCCC/FFFFFF?text=ايطالي", description: "وصف المنتج هنا" },
+                    { name: "فيتوتشيني الفريدو", price: 14000, image: "https://placehold.co/400x300/CCCCCC/FFFFFF?text=ايطالي", description: "وصف المنتج هنا" }
+                ]
+            },
+            "المطبخ الشرقي": {
+                tags: ['oriental', 'meat', 'chicken', 'seafood'],
+                icon: 'المطبخ الشرقي.png',
+                ribbonColor: 'brand-orange',
+                items: [
+                    { name: "قوزي لحم", price: 22000, image: "https://placehold.co/400x300/CCCCCC/FFFFFF?text=عراقي", description: "وصف المنتج هنا" },
+                    { name: "قوزي دجاج", price: 16000, image: "https://placehold.co/400x300/CCCCCC/FFFFFF?text=عراقي", description: "وصف المنتج هنا" },
+                    { name: "برياني لحم", price: 18000, image: "https://placehold.co/400x300/CCCCCC/FFFFFF?text=عراقي", description: "وصف المنتج هنا" },
+                    { name: "برياني دجاج", price: 16000, image: "https://placehold.co/400x300/CCCCCC/FFFFFF?text=عراقي", description: "وصف المنتج هنا" },
+                    { name: "مقلوبة لحم", price: 18000, image: "https://placehold.co/400x300/CCCCCC/FFFFFF?text=عراقي", description: "وصف المنتج هنا" },
+                    { name: "مقلوبة دجاج", price: 16000, image: "https://placehold.co/400x300/CCCCCC/FFFFFF?text=عراقي", description: "وصف المنتج هنا" },
+                    { name: "سمك زبيدي", price: 28000, image: "https://placehold.co/400x300/CCCCCC/FFFFFF?text=عراقي", description: "وصف المنتج هنا" }
+                ]
+            },
+            "المشاوي": {
+                tags: ['meat', 'chicken'],
+                icon: 'المشاوي.png',
+                ribbonColor: 'brand-orange',
+                items: [
+                    { name: "نفر تكة لحم", price: 20000, image: "https://placehold.co/400x300/CCCCCC/FFFFFF?text=مشاوي", description: "وصف المنتج هنا" },
+                    { name: "نفر تكة دجاج", price: 15000, image: "https://placehold.co/400x300/CCCCCC/FFFFFF?text=مشاوي", description: "وصف المنتج هنا" },
+                    { name: "نفر كباب لحم", price: 18000, image: "https://placehold.co/400x300/CCCCCC/FFFFFF?text=مشاوي", description: "وصف المنتج هنا" },
+                    { name: "نفر كباب دجاج", price: 15000, image: "https://placehold.co/400x300/CCCCCC/FFFFFF?text=مشاوي", description: "وصف المنتج هنا" },
+                    { name: "عرايس لحم", price: 12000, image: "https://placehold.co/400x300/CCCCCC/FFFFFF?text=مشاوي", description: "وصف المنتج هنا" },
+                    { name: "عرايس دجاج", price: 10000, image: "https://placehold.co/400x300/CCCCCC/FFFFFF?text=مشاوي", description: "وصف المنتج هنا" },
+                    { name: "دجاج مسحب", price: 16000, image: "https://placehold.co/400x300/CCCCCC/FFFFFF?text=مشاوي", description: "وصف المنتج هنا" },
+                    { name: "أضلاع غنم", price: 18000, image: "https://placehold.co/400x300/CCCCCC/FFFFFF?text=مشاوي", description: "وصف المنتج هنا" },
+                    { name: "أجنحة دجاج", price: 13000, image: "https://placehold.co/400x300/CCCCCC/FFFFFF?text=مشاوي", description: "وصف المنتج هنا" },
+                    { name: "مشاوي مشكل", price: 25000, image: "https://placehold.co/400x300/CCCCCC/FFFFFF?text=مشاوي", description: "وصف المنتج هنا" }
+                ]
+            },
+            "السوشي والبحريات": {
+                tags: ['seafood', 'chicken'],
+                icon: 'السوشي و البحريات.png',
+                ribbonColor: 'brand-orange',
+                items: [
+                    { name: "طوكيو تشكن افوكادو", price: 12000, image: "https://placehold.co/400x300/CCCCCC/FFFFFF?text=سوشي", description: "سوشي دجاج بانية مع الافوكادو" },
+                    { name: "سوشي مانغو كاليفورنيا", price: 13000, image: "https://placehold.co/400x300/CCCCCC/FFFFFF?text=سوشي", description: "كراب - مانغو أفوكادو" },
+                    { name: "غولدن شرمب ماكي", price: 14000, image: "https://placehold.co/400x300/CCCCCC/FFFFFF?text=سوشي", description: "روبيان بانية - أفوكادو - بقصم - سويت شيلي" },
+                    { name: "سموكي فيلفيت رول", price: 15000, image: "https://placehold.co/400x300/CCCCCC/FFFFFF?text=سوشي", description: "سلمون مدخن - أفوكادو - كرانشي" },
+                    { name: "ماكي هامور", price: 14000, image: "https://placehold.co/400x300/CCCCCC/FFFFFF?text=سوشي", description: "هامور بانية - افوكادو - خيار - جزر - سمسم" },
+                    { name: "روبيان مطبق", price: 18000, image: "https://placehold.co/400x300/CCCCCC/FFFFFF?text=بحريات", description: "وصف المنتج هنا" }
+                ]
+            },
+            "الساندويش": {
+                tags: ['chicken', 'meat'],
+                icon: 'الساندويشات.png',
+                ribbonColor: 'brand-green',
+                items: [
+                    { name: "سكالوب ساندويش", price: 8000, image: "https://placehold.co/400x300/CCCCCC/FFFFFF?text=ساندويش", description: "وصف المنتج هنا" },
+                    { name: "برغر دجاج", price: 9000, image: "https://placehold.co/400x300/CCCCCC/FFFFFF?text=ساندويش", description: "وصف المنتج هنا" },
+                    { name: "برغر كلاسك ( لحم )", price: 9000, image: "https://placehold.co/400x300/CCCCCC/FFFFFF?text=ساندويش", description: "وصف المنتج هنا" },
+                    { name: "برغر قداح", price: 10000, image: "https://placehold.co/400x300/CCCCCC/FFFFFF?text=ساندويش", description: "وصف المنتج هنا" }
+                ]
+            },
+            "حلويات قداح": {
+                tags: [],
+                icon: 'الحلويات.png',
+                ribbonColor: 'brand-orange',
+                items: [
+                    { name: "وافل نوتيلا", price: 7000, image: "https://placehold.co/400x300/CCCCCC/FFFFFF?text=حلويات", description: "وصف المنتج هنا" },
+                    { name: "وافل لوتس", price: 7000, image: "https://placehold.co/400x300/CCCCCC/FFFFFF?text=حلويات", description: "وصف المنتج هنا" },
+                    { name: "وافل بستاشيو", price: 8000, image: "https://placehold.co/400x300/CCCCCC/FFFFFF?text=حلويات", description: "وصف المنتج هنا" },
+                    { name: "صحن فواكة", price: 9000, image: "https://placehold.co/400x300/CCCCCC/FFFFFF?text=حلويات", description: "وصف المنتج هنا" },
+                    { name: "ايس كريم", price: 4000, image: "https://placehold.co/400x300/CCCCCC/FFFFFF?text=حلويات", description: "وصف المنتج هنا" }
+                ]
+            },
+            "المشروبات الساخنة": {
+                tags: ['drinks'],
+                icon: 'المشروبات الساخنة.png',
+                ribbonColor: 'brand-green',
+                items: [
+                    { name: "شاي عراقي", price: 2000, image: "https://placehold.co/400x300/CCCCCC/FFFFFF?text=مشروبات", description: "وصف المنتج هنا" },
+                    { name: "قهوة تركية", price: 3000, image: "https://placehold.co/400x300/CCCCCC/FFFFFF?text=مشروبات", description: "وصف المنتج هنا" }
+                ]
+            },
+            "المشروبات الباردة": {
+                tags: ['drinks'],
+                icon: 'المشروبات الباردة.png',
+                ribbonColor: 'brand-green',
+                items: [
+                    { name: "مياه معدنية", price: 1000, image: "https://placehold.co/400x300/CCCCCC/FFFFFF?text=مشروبات", description: "وصف المنتج هنا" },
+                    { name: "مشروبات غازية", price: 1500, image: "https://placehold.co/400x300/CCCCCC/FFFFFF?text=مشروبات", description: "وصف المنتج هنا" }
+                ]
+            },
+            "القهوة الباردة": {
+                tags: ['drinks'],
+                icon: 'القهوة الباردة.png',
+                ribbonColor: 'brand-green',
+                items: [
+                    { name: "ايس كوفي", price: 4500, image: "https://placehold.co/400x300/CCCCCC/FFFFFF?text=مشروبات", description: "وصف المنتج هنا" }
+                ]
+            },
+            "المشروبات المنعشة": {
+                tags: ['drinks'],
+                icon: 'المشروبات المنعشة.png',
+                ribbonColor: 'brand-green',
+                items: [
+                    { name: "موكتيل شوكولا وفستق", price: 6000, image: "https://placehold.co/400x300/CCCCCC/FFFFFF?text=مشروبات", description: "وصف المنتج هنا" }
+                ]
+            },
+            "الفطور": {
+                tags: ['breakfast'],
+                icon: 'الفطور.png',
+                ribbonColor: 'brand-green',
+                items: [
+                    { name: "سيت فطور قداح", price: 15000, image: "https://placehold.co/400x300/CCCCCC/FFFFFF?text=فطور", description: "وصف المنتج هنا" },
+                    { name: "بيض", price: 5000, image: "https://placehold.co/400x300/CCCCCC/FFFFFF?text=فطور", description: "عيون - سكرامبل - أومليت" }
+                ]
+            }
+        };
+
+
+        // --- DOM Elements ---
+        const categoryPage = document.getElementById('category-page');
+        const subcategoryPage = document.getElementById('subcategory-page');
+        const categoryGrid = document.getElementById('category-grid');
+        const itemList = document.getElementById('item-list');
+        const subcategoryTitle = document.getElementById('subcategory-title');
+        const backToMenuBtn = document.getElementById('back-to-menu');
+        const filterContainer = document.getElementById('filter-container');
+        const searchInput = document.getElementById('search-input');
+
+        // --- Functions ---
+        function formatPrice(num) {
+            return new Intl.NumberFormat('en-US').format(num);
+        }
+
+        function renderCategories(filter = 'all', searchTerm = '') {
+            categoryGrid.innerHTML = '';
+            const normalizedSearch = searchTerm.trim().toLowerCase();
+            let animationDelay = 0;
+
+            for (const categoryName in menuData) {
+                const category = menuData[categoryName];
+                const matchesFilter = (filter === 'all') || (category.tags && category.tags.includes(filter));
+                const matchesSearch = categoryName.toLowerCase().includes(normalizedSearch);
+
+                if (matchesFilter && matchesSearch) {
+                    const card = document.createElement('div');
+                    card.className = 'category-card bg-white rounded-lg p-4 text-center cursor-pointer flex flex-col items-center justify-center aspect-square';
+                    card.dataset.category = categoryName;
+                    
+                    card.innerHTML = `
+                        <div class="corner-ribbon ${category.ribbonColor}"></div>
+                        <img src="${category.icon}" alt="${categoryName}" class="w-12 h-12 mb-2 object-contain" onerror="this.onerror=null;this.src='https://placehold.co/48x48/007B2D/FFFFFF?text=Icon';">
+                        <h3 class="font-bold brand-green-text text-xl">${categoryName}</h3>
+                    `;
+                    
+                    card.addEventListener('click', () => showSubcategory(categoryName));
+                    categoryGrid.appendChild(card);
+                    
+                    setTimeout(() => {
+                        card.classList.add('animate-enter');
+                    }, animationDelay);
+                    animationDelay += 50;
+                }
+            }
+        }
+
+        function renderItems(categoryName) {
+            const category = menuData[categoryName];
+            subcategoryTitle.textContent = categoryName;
+            itemList.innerHTML = '';
+
+            if (!category || !category.items) {
+                itemList.innerHTML = '<p>لا توجد عناصر في هذا القسم.</p>';
+                return;
+            }
+
+            category.items.forEach((item, index) => {
+                const itemWrapper = document.createElement('div');
+                itemWrapper.className = 'item-wrapper';
+
+                const itemCard = document.createElement('div');
+                itemCard.className = 'item-card bg-white rounded-lg p-4 shadow-md cursor-pointer border brand-green-border';
+                itemCard.dataset.index = index;
+
+                itemCard.innerHTML = `
+                    <div class="flex items-center space-x-4 space-x-reverse">
+                        <img src="${item.image}" alt="${item.name}" class="w-24 h-24 rounded-md object-cover" onerror="this.onerror=null;this.src='https://placehold.co/96x96/CCCCCC/FFFFFF?text=Image';">
+                        <div class="flex-1">
+                            <h4 class="font-bold text-2xl">${item.name}</h4>
+                            <p class="brand-green-text font-semibold text-xl">IQD ${formatPrice(item.price)}</p>
+                        </div>
+                        <svg class="w-6 h-6 text-gray-400 transition-transform transform" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                    </div>
+                `;
+
+                const itemDetail = document.createElement('div');
+                itemDetail.className = 'item-detail bg-white rounded-b-lg px-4 text-xl';
+                itemDetail.innerHTML = `
+                    <div class="border-t brand-green-border pt-4 mt-2">
+                        <img src="${item.image}" alt="${item.name}" class="w-full h-48 rounded-md object-cover mb-4" onerror="this.onerror=null;this.src='https://placehold.co/400x192/CCCCCC/FFFFFF?text=Image';">
+                        <p class="text-gray-600">${item.description}</p>
+                    </div>
+                `;
+                
+                itemWrapper.appendChild(itemCard);
+                itemWrapper.appendChild(itemDetail);
+                itemList.appendChild(itemWrapper);
+
+                itemCard.addEventListener('click', (e) => {
+                    document.querySelectorAll('.item-detail.active').forEach(activeDetail => {
+                        if (activeDetail !== itemDetail) {
+                            activeDetail.classList.remove('active');
+                            activeDetail.previousElementSibling.querySelector('svg').classList.remove('rotate-180');
+                        }
+                    });
+                    itemDetail.classList.toggle('active');
+                    e.currentTarget.querySelector('svg').classList.toggle('rotate-180');
+                });
+            });
+        }
+
+        function showSubcategory(categoryName) {
+            renderItems(categoryName);
+            categoryPage.classList.add('hidden');
+            subcategoryPage.classList.remove('hidden');
+            window.scrollTo(0, 0);
+        }
+
+        function showCategoryPage() {
+            subcategoryPage.classList.add('hidden');
+            categoryPage.classList.remove('hidden');
+            const activeFilter = filterContainer.querySelector('.filter-btn.active').dataset.filter;
+            renderCategories(activeFilter, searchInput.value);
+        }
+
+        // --- Event Listeners ---
+        backToMenuBtn.addEventListener('click', showCategoryPage);
+
+        filterContainer.addEventListener('click', (e) => {
+            if (e.target.tagName === 'BUTTON') {
+                const filter = e.target.dataset.filter;
+                
+                filterContainer.querySelector('.filter-btn.active').classList.remove('active');
+                e.target.classList.add('active');
+                
+                renderCategories(filter, searchInput.value);
+            }
+        });
+
+        searchInput.addEventListener('input', (e) => {
+            const activeFilter = filterContainer.querySelector('.filter-btn.active').dataset.filter;
+            renderCategories(activeFilter, e.target.value);
+        });
+        
+        // --- Initial Setup ---
+        document.addEventListener('DOMContentLoaded', () => {
+            renderCategories();
+
+            // Scrollable Filter Bar Logic
+            const slider = document.querySelector('#filter-container');
+            const scrollWrapper = document.querySelector('.filter-bar-wrapper');
+            let isDown = false;
+            let startX;
+            let scrollLeft;
+
+            slider.addEventListener('mousedown', (e) => {
+                isDown = true;
+                slider.classList.add('grabbing');
+                startX = e.pageX - slider.offsetLeft;
+                scrollLeft = slider.scrollLeft;
+            });
+            slider.addEventListener('mouseleave', () => { isDown = false; slider.classList.remove('grabbing'); });
+            slider.addEventListener('mouseup', () => { isDown = false; slider.classList.remove('grabbing'); });
+            slider.addEventListener('mousemove', (e) => {
+                if(!isDown) return;
+                e.preventDefault();
+                const x = e.pageX - slider.offsetLeft;
+                const walk = (x - startX) * 2;
+                slider.scrollLeft = scrollLeft - walk;
+            });
+
+            function checkShadows() {
+                if (!slider) return;
+                const tolerance = 1;
+                const maxScroll = slider.scrollWidth - slider.clientWidth;
+                const showLeft = slider.scrollLeft > tolerance;
+                const showRight = slider.scrollLeft < maxScroll - tolerance;
+                scrollWrapper.style.setProperty('--left-fade-opacity', showLeft ? '1' : '0');
+                scrollWrapper.style.setProperty('--right-fade-opacity', showRight ? '1' : '0');
+            }
+            
+            slider.addEventListener('scroll', checkShadows);
+            window.addEventListener('resize', checkShadows);
+            checkShadows();
+            setTimeout(checkShadows, 100); 
+        });
+
+    </script>
+</body>
+</html>
